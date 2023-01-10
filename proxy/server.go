@@ -107,21 +107,14 @@ func (s *Server) dnsHandler(w dns.ResponseWriter, req *dns.Msg) {
 	for _, host := range req.Question {
 		s.Log.Info("querying for host", "host", host.Name)
 
-		// replace the domain from s.Zone
-		// with local
-
-		h := host.Name
-
-		if s.Zone != zone {
-			h = strings.Replace(h, s.Zone, zone, 1)
-		}
+		newHost := s.rewriteHostname(host.Name)
 
 		// TODO need to pull out context errors here if we can
 		// as that means we timed out resolving hostname
 		// not everything is on fire.
-		ip, err := s.mDNSResolveHostname(h)
+		ip, err := s.mDNSResolveHostname(newHost)
 		if err != nil {
-			s.Log.Error(err, "mdns resolve hostname", "host", h)
+			s.Log.Error(err, "mdns resolve hostname", "host", newHost)
 			continue
 		}
 
@@ -147,6 +140,23 @@ func (s *Server) dnsHandler(w dns.ResponseWriter, req *dns.Msg) {
 	if err := w.WriteMsg(&resp); err != nil {
 		s.Log.Error(err, "could not write packet", "resp", resp)
 	}
+}
+
+func (s *Server) rewriteHostname(host string) string {
+	h := host
+
+	if s.Zone == zone {
+		return h
+	}
+
+	i := strings.LastIndex(h, s.Zone)
+	if i == -1 {
+		return h
+	}
+
+	h = fmt.Sprintf("%s%s", host[0:i], zone)
+
+	return h
 }
 
 func (s *Server) mDNSResolveHostname(hostname string) (net.IP, error) {
