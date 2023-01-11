@@ -21,7 +21,6 @@ const (
 	ip   = ""
 	port = 53
 	zone = "local."
-	// LocalZone = "local"
 )
 
 type (
@@ -107,12 +106,16 @@ func (s *Server) dnsHandler(w dns.ResponseWriter, req *dns.Msg) {
 	for _, host := range req.Question {
 		s.Log.Info("querying for host", "host", host.Name)
 
+		ctx, can := context.WithTimeout(context.Background(), s.Timeout)
+
+		defer can()
+
 		newHost := s.rewriteHostname(host.Name)
 
 		// TODO need to pull out context errors here if we can
 		// as that means we timed out resolving hostname
 		// not everything is on fire.
-		ip, err := s.mDNSResolveHostname(newHost)
+		ip, err := s.mDNSResolveHostname(ctx, newHost)
 		if err != nil {
 			s.Log.Error(err, "mdns resolve hostname", "host", newHost)
 			continue
@@ -159,22 +162,13 @@ func (s *Server) rewriteHostname(host string) string {
 	return h
 }
 
-func (s *Server) mDNSResolveHostname(hostname string) (net.IP, error) {
+func (s *Server) mDNSResolveHostname(ctx context.Context, hostname string) (net.IP, error) {
 	h := strings.TrimSuffix(hostname, ".")
-
-	ctx, can := context.WithTimeout(context.Background(), s.Timeout)
-
-	defer can()
 
 	_, addr, err := s.mDNS.Query(ctx, h)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch dns hostname: %w", err)
 	}
 
-	ipstr, _, err := net.SplitHostPort(addr.String())
-	if err != nil {
-		return nil, fmt.Errorf("invalid address string: %w", err)
-	}
-
-	return net.ParseIP(ipstr), nil
+	return net.ParseIP(addr.String()), nil
 }

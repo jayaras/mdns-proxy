@@ -1,12 +1,14 @@
 module mdns-proxy
 
-go 1.18
+go 1.19
+
+//replace github.com/pion/mdns => github.com/jaras/mdns [master]
 
 require (
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
 	github.com/miekg/dns v1.1.50
-	github.com/pion/mdns v0.0.5
+	github.com/pion/mdns v0.0.6-0.20230110082909-9dd554ad1ce5
 	go.uber.org/zap v1.24.0
 	golang.org/x/net v0.4.0
 )

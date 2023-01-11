@@ -50,6 +50,12 @@ func TestServer_rewriteHostname(t *testing.T) {
 			host: "blarg.foo.bar.",
 			want: "blarg.local.",
 		},
+		{
+			name: "not in domain",
+			Zone: "foo.bar.",
+			host: "beep.boop.bop.",
+			want: "beep.boop.bop.",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
