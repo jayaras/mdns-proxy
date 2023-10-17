@@ -1,33 +1,25 @@
----
-name: "tagged-release"
+name: Publish Release YAML
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types:
+      - 'created'
 
 jobs:
-  tagged-release:
-    name: "Tagged Release"
-    runs-on: "ubuntu-latest"
-
+  publish-release-yaml:
+    name: Publish Release YAML
+    runs-on: ubuntu-latest
     steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
       - uses: actions/checkout@v3
-      - name: set up go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-      - name: build
-        run: sh build.sh
-      # ...
-      - name: "Build & test"
-        run: |
-          mv mdns-proxy mdns-proxy.linux-amd64
+      - uses: ko-build/setup-ko
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          files: |
-            LICENSE
-            mdns-proxy
+      - name: Generate and upload release.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag=$(echo ${{ github.ref }} | cut -c11-)  # get tag name without tags/refs/ prefix.
+          ko resolve -t ${tag} -f config/ > release.yaml
+          gh release upload ${tag} release.yaml
