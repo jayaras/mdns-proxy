@@ -6,17 +6,19 @@ package main
 
 import (
 	"fmt"
+	"mdns-proxy/proxy"
 	"os"
 	"time"
 
+	"mdns-proxy/proxy"
+
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
-	"mdns-proxy/proxy"
 )
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Printf("server failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "server failed: %v\n", err)
 		os.Exit(1)
 	}
 }

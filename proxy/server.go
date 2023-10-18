@@ -36,49 +36,52 @@ type (
 	}
 )
 
-func (s *Server) ListenAndServe() error {
+// ListenAndServe Start the mDNS and DNS systems
+func (srv *Server) ListenAndServe() error {
 	addr := netip.MustParseAddrPort(mdns.DefaultAddress)
 	udpAddr := net.UDPAddrFromAddrPort(addr)
 
-	s.Log.Info("starting mDNS listener ", "mDNS Listener", addr)
+	srv.Log.Info("starting mDNS listener ", "mDNS Listener", addr)
 	l, err := net.ListenUDP("udp4", udpAddr)
 	if err != nil {
 		return fmt.Errorf("listen error: %w", err)
 	}
 
 	mDNSSrv, err := mdns.Server(ipv4.NewPacketConn(l), &mdns.Config{
-		QueryInterval: s.Timeout,
+		QueryInterval: srv.Timeout,
 	})
 	if err != nil {
 		return fmt.Errorf("mdns server error: %w", err)
 	}
 
-	if s.Port == 0 {
-		s.Port = port
+	if srv.Port == 0 {
+		srv.Port = port
 	}
 
-	if s.IP == "" {
-		s.IP = ip
+	if srv.IP == "" {
+		srv.IP = ip
 	}
 
-	s.dns = &dns.Server{
+	srv.dns = &dns.Server{
 		Net:  "udp",
-		Addr: fmt.Sprintf("%s:%d", s.IP, s.Port),
+		Addr: fmt.Sprintf("%s:%d", srv.IP, srv.Port),
 		//	IdleTimeout: func() time.Duration { return s.Timeout },
 	}
 
-	s.mDNS = mDNSSrv
+	srv.mDNS = mDNSSrv
 
-	if s.Zone == "" {
-		s.Zone = zone
+	if srv.Zone == "" {
+		srv.Zone = zone
 	}
 
-	s.Log.Info("starting DNS listener", "addr", s.dns.Addr, "zone", s.Zone)
-	mux := dns.NewServeMux()
-	mux.HandleFunc(s.Zone, s.dnsHandler)
-	s.dns.Handler = mux
+	srv.Log.Info("starting DNS listener",
+		"addr", srv.dns.Addr, "zone", srv.Zone)
 
-	err = s.dns.ListenAndServe()
+	mux := dns.NewServeMux()
+	mux.HandleFunc(srv.Zone, srv.dnsHandler)
+	srv.dns.Handler = mux
+
+	err = srv.dns.ListenAndServe()
 	if err != nil {
 		return fmt.Errorf("dns server error: %w", err)
 	}
@@ -86,42 +89,43 @@ func (s *Server) ListenAndServe() error {
 	return nil
 }
 
-func (s *Server) Close() error {
-	if err := s.mDNS.Close(); err != nil {
+func (srv *Server) Close() error {
+	if err := srv.mDNS.Close(); err != nil {
 		return fmt.Errorf("mdns agent shutdown failed: %w", err)
 	}
 
-	if err := s.dns.Shutdown(); err != nil {
+	if err := srv.dns.Shutdown(); err != nil {
 		return fmt.Errorf("dns server shutdown failed: %w", err)
 	}
 
 	return nil
 }
 
-func (s *Server) dnsHandler(w dns.ResponseWriter, req *dns.Msg) {
+func (srv *Server) dnsHandler(w dns.ResponseWriter, req *dns.Msg) {
 	var resp dns.Msg
 
 	resp.SetReply(req)
 
 	for _, host := range req.Question {
-		s.Log.Info("querying for host", "host", host.Name)
+		srv.Log.Info("querying for host", "host", host.Name)
 
-		ctx, can := context.WithTimeout(context.Background(), s.Timeout)
+		ctx, can := context.WithTimeout(context.Background(), srv.Timeout)
 
 		defer can()
 
-		newHost := s.rewriteHostname(host.Name)
+		newHost := srv.rewriteHostname(host.Name)
 
 		// TODO need to pull out context errors here if we can
 		// as that means we timed out resolving hostname
 		// not everything is on fire.
-		ip, err := s.mDNSResolveHostname(ctx, newHost)
+		// mdns seems to wrap this it might be tricky.
+		ip, err := srv.mDNSResolveHostname(ctx, newHost)
 		if err != nil {
-			s.Log.Error(err, "mdns resolve hostname", "host", newHost)
+			srv.Log.Error(err, "mdns resolve hostname", "host", newHost)
 			continue
 		}
 
-		s.Log.Info("found ip", "ip", ip)
+		srv.Log.Info("found ip", "ip", ip)
 
 		rec := dns.A{
 			Hdr: dns.RR_Header{
@@ -137,22 +141,22 @@ func (s *Server) dnsHandler(w dns.ResponseWriter, req *dns.Msg) {
 	}
 
 	if len(resp.Answer) == 0 {
-		s.Log.Info("no records found")
+		srv.Log.Info("no records found")
 	}
 
 	if err := w.WriteMsg(&resp); err != nil {
-		s.Log.Error(err, "could not write packet", "resp", resp)
+		srv.Log.Error(err, "could not write packet", "resp", resp)
 	}
 }
 
-func (s *Server) rewriteHostname(host string) string {
+func (srv *Server) rewriteHostname(host string) string {
 	h := host
 
-	if s.Zone == zone {
+	if srv.Zone == zone {
 		return h
 	}
 
-	i := strings.LastIndex(h, s.Zone)
+	i := strings.LastIndex(h, srv.Zone)
 	if i == -1 {
 		return h
 	}
@@ -162,10 +166,10 @@ func (s *Server) rewriteHostname(host string) string {
 	return h
 }
 
-func (s *Server) mDNSResolveHostname(ctx context.Context, hostname string) (net.IP, error) {
+func (srv *Server) mDNSResolveHostname(ctx context.Context, hostname string) (net.IP, error) {
 	h := strings.TrimSuffix(hostname, ".")
 
-	_, addr, err := s.mDNS.Query(ctx, h)
+	_, addr, err := srv.mDNS.Query(ctx, h)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch dns hostname: %w", err)
 	}
