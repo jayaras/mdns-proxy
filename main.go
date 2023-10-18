@@ -12,6 +12,8 @@ import (
 
 	"mdns-proxy/proxy"
 
+	"github.com/spf13/cobra"
+
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 )
@@ -31,17 +33,30 @@ func run() error {
 		return fmt.Errorf("could not create log: %w", err)
 	}
 
-	srv := &proxy.Server{
-		Log:     zapr.NewLogger(zapLog),
-		IP:      "127.0.0.1",
-		Port:    5678,
-		Timeout: time.Second * 2,
-		Zone:    "dev.",
+	rootCmd := &cobra.Command{Use: "mdns-proxy"}
+
+	timeout := rootCmd.Flags().DurationP("timeout", "t", time.Second*2, "timeout for mdns response")
+	port := rootCmd.Flags().Uint16P("port", "p", 53, "dns server udp port")
+	ip := rootCmd.Flags().StringP("ip", "i", "0.0.0.0", "ip address to listen on")
+	zone := rootCmd.Flags().StringP("zone", "z", "local.", "authoritive dns zone")
+
+	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
+
+		srv := &proxy.Server{
+			Log:     zapr.NewLogger(zapLog),
+			IP:      *ip,
+			Port:    int(*port),
+			Timeout: *timeout,
+			Zone:    *zone,
+		}
+
+		if err = srv.ListenAndServe(); err != nil {
+			return fmt.Errorf("could not start dns server: %w", err)
+		}
+
+		return nil
+
 	}
 
-	if err = srv.ListenAndServe(); err != nil {
-		return fmt.Errorf("could not start dns server: %w", err)
-	}
-
-	return nil
+	return rootCmd.Execute()
 }
