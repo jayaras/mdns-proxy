@@ -38,15 +38,19 @@ func run() error {
 	port := rootCmd.Flags().Uint16P("port", "p", 5345, "dns server udp port")
 	ip := rootCmd.Flags().StringP("ip", "i", "0.0.0.0", "ip address to listen on")
 	zone := rootCmd.Flags().StringP("zone", "z", "local.", "authoritive dns zone")
+	recursive := rootCmd.Flags().BoolP("recursive", "r", true, "enable recursive resolver")
+	upstream := rootCmd.Flags().StringP("upstream", "u", "192.168.1.1:53", "upstream DNS Server")
 
 	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
 
 		srv := &proxy.Server{
-			Log:     zapr.NewLogger(zapLog),
-			IP:      *ip,
-			Port:    int(*port),
-			Timeout: *timeout,
-			Zone:    *zone,
+			Log:       zapr.NewLogger(zapLog),
+			IP:        *ip,
+			Port:      int(*port),
+			Timeout:   *timeout,
+			Zone:      *zone,
+			Recusrive: *recursive,
+			Upstream:  *upstream,
 		}
 
 		if err = srv.ListenAndServe(); err != nil {

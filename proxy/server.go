@@ -26,13 +26,16 @@ const (
 type (
 	// Server is the mDNS proxy server
 	Server struct {
-		mDNS    *mdns.Conn
-		dns     *dns.Server
-		Log     logr.Logger
-		Timeout time.Duration
-		IP      string
-		Port    int
-		Zone    string
+		mDNS      *mdns.Conn
+		dns       *dns.Server
+		Log       logr.Logger
+		Timeout   time.Duration
+		IP        string
+		Port      int
+		Zone      string
+		Recusrive bool
+		client    *dns.Client
+		Upstream  string
 	}
 )
 
@@ -79,6 +82,12 @@ func (srv *Server) ListenAndServe() error {
 
 	mux := dns.NewServeMux()
 	mux.HandleFunc(srv.Zone, srv.dnsHandler)
+
+	if srv.Recusrive {
+		srv.client = &dns.Client{}
+		mux.HandleFunc(".", srv.recursiveHandler)
+	}
+
 	srv.dns.Handler = mux
 
 	err = srv.dns.ListenAndServe()
@@ -101,13 +110,27 @@ func (srv *Server) Close() error {
 	return nil
 }
 
+func (srv *Server) recursiveHandler(w dns.ResponseWriter, req *dns.Msg) {
+	for _, host := range req.Question {
+		srv.Log.Info("querying for dns", "host", host.Name)
+
+	}
+	m, _, err := srv.client.Exchange(req, srv.Upstream)
+
+	if err != nil {
+		srv.Log.Error(err, "host exchange")
+	}
+	w.WriteMsg(m)
+
+}
+
 func (srv *Server) dnsHandler(w dns.ResponseWriter, req *dns.Msg) {
 	var resp dns.Msg
 
 	resp.SetReply(req)
 
 	for _, host := range req.Question {
-		srv.Log.Info("querying for host", "host", host.Name)
+		srv.Log.Info("querying for mdns", "host", host.Name)
 
 		ctx, can := context.WithTimeout(context.Background(), srv.Timeout)
 
