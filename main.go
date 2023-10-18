@@ -35,7 +35,7 @@ func run() error {
 	rootCmd := &cobra.Command{Use: "mdns-proxy"}
 
 	timeout := rootCmd.Flags().DurationP("timeout", "t", time.Second*2, "timeout for mdns response")
-	port := rootCmd.Flags().Uint16P("port", "p", 53, "dns server udp port")
+	port := rootCmd.Flags().Uint16P("port", "p", 5345, "dns server udp port")
 	ip := rootCmd.Flags().StringP("ip", "i", "0.0.0.0", "ip address to listen on")
 	zone := rootCmd.Flags().StringP("zone", "z", "local.", "authoritive dns zone")
 
