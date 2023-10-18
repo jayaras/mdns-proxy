@@ -6,7 +6,6 @@ package main
 
 import (
 	"fmt"
-	"mdns-proxy/proxy"
 	"os"
 	"time"
 
