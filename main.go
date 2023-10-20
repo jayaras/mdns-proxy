@@ -12,6 +12,7 @@ import (
 	"mdns-proxy/proxy"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -34,23 +35,28 @@ func run() error {
 
 	rootCmd := &cobra.Command{Use: "mdns-proxy"}
 
-	timeout := rootCmd.Flags().DurationP("timeout", "t", time.Second*4, "timeout for mdns response")
-	port := rootCmd.Flags().Uint16P("port", "p", 5345, "dns server udp port")
-	ip := rootCmd.Flags().StringP("ip", "i", "0.0.0.0", "ip address to listen on")
-	zone := rootCmd.Flags().StringP("zone", "z", "mdns.", "authoritive dns zone")
-	recursive := rootCmd.Flags().BoolP("recursive", "r", true, "enable recursive resolver")
-	upstream := rootCmd.Flags().StringP("upstream", "u", "192.168.1.1:53", "upstream DNS Server")
+	viper.SetEnvPrefix("MDNS_PROXY")
+	viper.AutomaticEnv()
+
+	rootCmd.Flags().DurationP("timeout", "t", time.Second*4, "timeout for mdns response")
+	rootCmd.Flags().Uint16P("port", "p", 5345, "dns server udp port")
+	rootCmd.Flags().StringP("ip", "i", "0.0.0.0", "ip address to listen on")
+	rootCmd.Flags().StringP("zone", "z", "mdns.", "authoritive dns zone")
+	rootCmd.Flags().BoolP("recursive", "r", true, "enable recursive resolver")
+	rootCmd.Flags().StringP("upstream", "u", "192.168.1.1:53", "upstream DNS Server")
 
 	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
 
+		viper.BindPFlags(rootCmd.Flags())
+
 		srv := &proxy.Server{
 			Log:       zapr.NewLogger(zapLog),
-			IP:        *ip,
-			Port:      int(*port),
-			Timeout:   *timeout,
-			Zone:      *zone,
-			Recusrive: *recursive,
-			Upstream:  *upstream,
+			IP:        viper.GetString("ip"),
+			Port:      int(viper.GetUint16("port")),
+			Timeout:   viper.GetDuration("timeout"),
+			Zone:      viper.GetString("zone"),
+			Recusrive: viper.GetBool("recursive"),
+			Upstream:  viper.GetString("upstream"),
 		}
 
 		if err = srv.ListenAndServe(); err != nil {
