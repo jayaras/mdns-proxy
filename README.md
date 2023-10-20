@@ -1,7 +1,7 @@
 # mdns-proxy
 My home network and lab make heavy use of mDNS either directly (avahi & MacOS) or indirectly via https://github.com/blake/external-mdns.  This is all well and good except:  
 1.  I have several things that do not support mDNS.
-2.  mDNS does not propigate over my p2p VPN.
+2.  mDNS does not propagate over my p2p VPN.
 
 This work is a fork of the original mdns-proxy code with the following changes.
 * It is a restructure of the original code to test out some things patterns I was interested in at the time.
