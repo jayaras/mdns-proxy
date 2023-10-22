@@ -44,6 +44,13 @@ func (srv *Server) ListenAndServe() error {
 	addr := netip.MustParseAddrPort(mdns.DefaultAddress)
 	udpAddr := net.UDPAddrFromAddrPort(addr)
 
+	srv.Log.Info("starting mdns-proxy with settings",
+		"timeout", srv.Timeout,
+		"ip", srv.IP,
+		"port", srv.Port,
+		"zone", srv.Zone, "recursive", srv.Recusrive, "upstream", srv.Upstream,
+	)
+
 	srv.Log.Info("starting mDNS listener ", "mDNS Listener", addr)
 	l, err := net.ListenUDP("udp4", udpAddr)
 	if err != nil {
