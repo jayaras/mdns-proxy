@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"mdns-proxy/proxy"
+	"github.com/jayaras/mdns-proxy/proxy"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

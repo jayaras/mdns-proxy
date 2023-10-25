@@ -8,12 +8,6 @@ import (
 )
 
 func TestServer_rewriteHostname(t *testing.T) {
-	type fields struct {
-		Zone string
-	}
-	type args struct {
-		host string
-	}
 	tests := []struct {
 		name string
 		Zone string

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mdns-proxy-deployment
+spec:
+  selector:
+    matchLabels:
+      app: mdns-proxy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mdns-proxy
+    spec:
+      hostNetwork: true
+      containers:
+      - name: mdns-proxy
+        imagePullPolicy: Always
+        image: ko://github.com/jayaras/mdns-proxy
+        env:
+          - name: MDNS_PROXY_IP
+            value: "0.0.0.0"
+          - name: MDNS_PROXY_TIMEOUT
+            value: "10s"
+        ports:
+        - containerPort: 5345
+          protocol: UDP
+        - containerPort: 5353
+          protocol: UDP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mdns-proxy-service
+  labels:
+    run: mdns-proxy
+spec:
+  ports:
+  - port: 53
+    protocol: UDP
+    targetPort: 5345
+    nodePort: 30053
+  selector:
+    app: mdns-proxy
+  type: LoadBalancer

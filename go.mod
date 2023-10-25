@@ -1,4 +1,4 @@
-module mdns-proxy
+module github.com/jayaras/mdns-proxy
 
 go 1.19
 
