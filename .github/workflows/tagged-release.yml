@@ -21,6 +21,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag=$(echo ${{ github.ref }} | cut -c11-)  # get tag name without tags/refs/ prefix.
-          ko build -B --platform=linux/arm64,linux/amd64 -t ${tag}
-#ko build -B --platform=linux/arm64,linux/amd64
-#gh release upload ${tag} release.yaml
+          #ko build -B --platform=linux/arm64,linux/amd64 -t ${tag}
+          ko resolve -f config/kubernetes.yaml -B --platform=linux/arm64,linux/amd64 -t ${tag} > k8s.yaml
+          gh release upload ${tag} k8s.yaml
+
