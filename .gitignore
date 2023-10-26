@@ -1,2 +1,3 @@
 .idea/
 mdns-proxy
+k8s.yaml
