@@ -18,9 +18,12 @@ spec:
         imagePullPolicy: Always
         image: ko://github.com/jayaras/mdns-proxy
         resources:
-          limits:
+          requests:
             cpu: "250m"
-            memory: "64m"
+            memory: "16m"
+          limits:
+            cpu: "500m"
+            memory: "32m"
         env:
           - name: MDNS_PROXY_IP
             value: "0.0.0.0"
