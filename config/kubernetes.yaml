@@ -17,6 +17,10 @@ spec:
       - name: mdns-proxy
         imagePullPolicy: Always
         image: ko://github.com/jayaras/mdns-proxy
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "64m"
         env:
           - name: MDNS_PROXY_IP
             value: "0.0.0.0"
@@ -27,6 +31,7 @@ spec:
           protocol: UDP
         - containerPort: 5353
           protocol: UDP
+        
 ---
 apiVersion: v1
 kind: Service
