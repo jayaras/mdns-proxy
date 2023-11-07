@@ -11,6 +11,7 @@ require (
 	github.com/pion/mdns v0.0.9
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.17.0
+	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.17.0
 )

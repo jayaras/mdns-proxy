@@ -16,6 +16,8 @@ import (
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
+
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
